@@ -1,4 +1,4 @@
-import type { CapsuleStatus } from '../index'
+import type { CapsuleStatus } from '../index.js';
 
 export const CAPSULE_STATUSES: CapsuleStatus[] = [
   'DRAFT',
