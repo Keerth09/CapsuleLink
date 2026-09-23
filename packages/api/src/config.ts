@@ -9,4 +9,6 @@ export const config = {
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   resendFromEmail: process.env.RESEND_FROM_EMAIL ?? "",
   webOrigin: process.env.WEB_ORIGIN ?? "http://localhost:5173",
+  accessTokenTtl: "15m",
+  refreshTokenTtlDays: 7,
 } as const;

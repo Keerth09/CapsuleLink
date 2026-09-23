@@ -9,9 +9,28 @@ const userSchema = new Schema(
       lowercase: true,
       trim: true,
     },
+
     passwordHash: {
       type: String,
       required: true,
+    },
+
+    emailVerified: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
+
+    timezone: {
+      type: String,
+      required: true,
+      default: "UTC",
+    },
+
+    status: {
+      type: String,
+      required: true,
+      default: "ACTIVE",
     },
   },
   {
