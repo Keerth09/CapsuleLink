@@ -1,8 +1,12 @@
+
 import { Router } from "express";
+import crypto from "node:crypto";
 import {
+  emailSchema,
   loginSchema,
   registerSchema,
 } from "@capsulelink/validation";
+
 import { loginUser } from "../auth/login.js";
 import {
   clearAuthCookies,
@@ -14,6 +18,8 @@ import { verifyEmail } from "../auth/verification.js";
 import { refreshSession } from "../auth/refresh.js";
 import { sendVerificationEmail } from "../email/verificationEmail.js";
 import { Session } from "../models/Session.js";
+import { User } from "../models/User.js";
+import { EmailVerification } from "../models/EmailVerification.js";
 import { hashRefreshToken } from "../auth/tokens.js";
 import {
   AuthenticatedRequest,
@@ -22,13 +28,12 @@ import {
 
 const router = Router();
 
+// REGISTER
 router.post("/register", async (req, res) => {
   const result = registerSchema.safeParse(req.body);
 
   if (!result.success) {
-    res.status(400).json({
-      error: "INVALID_REQUEST",
-    });
+    res.status(400).json({ error: "INVALID_REQUEST" });
     return;
   }
 
@@ -52,28 +57,83 @@ router.post("/register", async (req, res) => {
       error instanceof Error &&
       error.message === "EMAIL_ALREADY_REGISTERED"
     ) {
-      res.status(409).json({
-        error: "EMAIL_ALREADY_REGISTERED",
-      });
+      res.status(409).json({ error: "EMAIL_ALREADY_REGISTERED" });
       return;
     }
 
     console.error("Registration failed:", error);
+    res.status(500).json({ error: "REGISTRATION_FAILED" });
+  }
+});
 
+// RESEND VERIFICATION EMAIL
+router.post("/resend-verification", async (req, res) => {
+  const result = emailSchema.safeParse(req.body?.email);
+
+  if (!result.success) {
+    res.status(400).json({ error: "INVALID_REQUEST" });
+    return;
+  }
+
+  try {
+    const email = result.data.trim().toLowerCase();
+    const user = await User.findOne({ email });
+
+    // Do not reveal whether an account exists or is verified.
+    if (!user || user.emailVerified || user.status !== "ACTIVE") {
+      res.status(200).json({
+        message:
+          "If the account exists and needs verification, an email will be sent.",
+      });
+      return;
+    }
+
+    const verificationToken = crypto
+      .randomBytes(32)
+      .toString("base64url");
+
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(verificationToken)
+      .digest("hex");
+
+    // Invalidate previous unused verification tokens.
+    await EmailVerification.updateMany(
+      {
+        userId: user._id,
+        consumedAt: null,
+      },
+      {
+        consumedAt: new Date(),
+      },
+    );
+
+    await EmailVerification.create({
+      userId: user._id,
+      tokenHash,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    });
+
+    await sendVerificationEmail(user.email, verificationToken);
+
+    res.status(200).json({
+      message: "Verification email sent.",
+    });
+  } catch (error) {
+    console.error("Resend verification failed:", error);
     res.status(500).json({
-      error: "REGISTRATION_FAILED",
+      error: "VERIFICATION_EMAIL_SEND_FAILED",
     });
   }
 });
 
+// VERIFY EMAIL
 router.post("/verify-email", async (req, res) => {
   const token =
     typeof req.body?.token === "string" ? req.body.token : "";
 
   if (!token) {
-    res.status(400).json({
-      error: "INVALID_REQUEST",
-    });
+    res.status(400).json({ error: "INVALID_REQUEST" });
     return;
   }
 
@@ -95,20 +155,16 @@ router.post("/verify-email", async (req, res) => {
     }
 
     console.error("Email verification failed:", error);
-
-    res.status(500).json({
-      error: "EMAIL_VERIFICATION_FAILED",
-    });
+    res.status(500).json({ error: "EMAIL_VERIFICATION_FAILED" });
   }
 });
 
+// LOGIN
 router.post("/login", async (req, res) => {
   const result = loginSchema.safeParse(req.body);
 
   if (!result.success) {
-    res.status(400).json({
-      error: "INVALID_REQUEST",
-    });
+    res.status(400).json({ error: "INVALID_REQUEST" });
     return;
   }
 
@@ -118,23 +174,15 @@ router.post("/login", async (req, res) => {
       result.data.password,
     );
 
-    setAuthCookies(
-      res,
-      login.accessToken,
-      login.refreshToken,
-    );
+    setAuthCookies(res, login.accessToken, login.refreshToken);
 
-    res.status(200).json({
-      message: "Login successful.",
-    });
+    res.status(200).json({ message: "Login successful." });
   } catch (error) {
     if (
       error instanceof Error &&
       error.message === "EMAIL_NOT_VERIFIED"
     ) {
-      res.status(403).json({
-        error: "EMAIL_NOT_VERIFIED",
-      });
+      res.status(403).json({ error: "EMAIL_NOT_VERIFIED" });
       return;
     }
 
@@ -142,9 +190,7 @@ router.post("/login", async (req, res) => {
       error instanceof Error &&
       error.message === "ACCOUNT_NOT_ACTIVE"
     ) {
-      res.status(403).json({
-        error: "ACCOUNT_NOT_ACTIVE",
-      });
+      res.status(403).json({ error: "ACCOUNT_NOT_ACTIVE" });
       return;
     }
 
@@ -152,94 +198,78 @@ router.post("/login", async (req, res) => {
       error instanceof Error &&
       error.message === "INVALID_CREDENTIALS"
     ) {
-      res.status(401).json({
-        error: "INVALID_CREDENTIALS",
-      });
+      res.status(401).json({ error: "INVALID_CREDENTIALS" });
       return;
     }
 
     console.error("Login failed:", error);
-
-    res.status(500).json({
-      error: "LOGIN_FAILED",
-    });
+    res.status(500).json({ error: "LOGIN_FAILED" });
   }
 });
 
+// REFRESH SESSION
 router.post("/refresh", async (req, res) => {
   const refreshToken = req.cookies?.[REFRESH_COOKIE];
 
   if (!refreshToken) {
-    res.status(401).json({
-      error: "INVALID_REFRESH_TOKEN",
-    });
+    res.status(401).json({ error: "INVALID_REFRESH_TOKEN" });
     return;
   }
 
   try {
     const refreshed = await refreshSession(refreshToken);
 
-    setAuthCookies(
-      res,
-      refreshed.accessToken,
-      refreshed.refreshToken,
-    );
+    setAuthCookies(res, refreshed.accessToken, refreshed.refreshToken);
 
-    res.status(200).json({
-      message: "Session refreshed.",
-    });
+    res.status(200).json({ message: "Session refreshed." });
   } catch (error) {
     if (
       error instanceof Error &&
       error.message === "INVALID_REFRESH_TOKEN"
     ) {
       clearAuthCookies(res);
-
-      res.status(401).json({
-        error: "INVALID_REFRESH_TOKEN",
-      });
+      res.status(401).json({ error: "INVALID_REFRESH_TOKEN" });
       return;
     }
 
     console.error("Session refresh failed:", error);
-
-    res.status(500).json({
-      error: "SESSION_REFRESH_FAILED",
-    });
+    res.status(500).json({ error: "SESSION_REFRESH_FAILED" });
   }
 });
 
+// LOGOUT
 router.post("/logout", async (req, res) => {
-  const refreshToken = req.cookies?.[REFRESH_COOKIE];
+  try {
+    const refreshToken = req.cookies?.[REFRESH_COOKIE];
 
-  if (refreshToken) {
-    const refreshTokenHash = hashRefreshToken(refreshToken);
+    if (refreshToken) {
+      const refreshTokenHash = hashRefreshToken(refreshToken);
 
-    await Session.findOneAndUpdate(
-      {
-        refreshTokenHash,
-        revokedAt: null,
-      },
-      {
-        revokedAt: new Date(),
-      },
-    );
+      await Session.findOneAndUpdate(
+        {
+          refreshTokenHash,
+          revokedAt: null,
+        },
+        {
+          revokedAt: new Date(),
+        },
+      );
+    }
+
+    clearAuthCookies(res);
+    res.status(200).json({ message: "Logout successful." });
+  } catch (error) {
+    console.error("Logout failed:", error);
+    res.status(500).json({ error: "LOGOUT_FAILED" });
   }
-
-  clearAuthCookies(res);
-
-  res.status(200).json({
-    message: "Logout successful.",
-  });
 });
 
+// CURRENT USER
 router.get(
   "/me",
   requireAuth,
   async (req: AuthenticatedRequest, res) => {
-    res.status(200).json({
-      userId: req.userId,
-    });
+    res.status(200).json({ userId: req.userId });
   },
 );
 
