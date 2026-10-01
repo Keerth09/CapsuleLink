@@ -1,4 +1,4 @@
-import { Schema, model, Types } from "mongoose";
+﻿import { Schema, model, Types } from "mongoose";
 
 const beneficiarySchema = new Schema(
   {
@@ -8,12 +8,27 @@ const beneficiarySchema = new Schema(
       required: true,
       index: true,
     },
+
+    userId: {
+      type: Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+
     email: {
       type: String,
       required: true,
       lowercase: true,
       trim: true,
     },
+
+    priority: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+
     status: {
       type: String,
       enum: [
@@ -29,10 +44,52 @@ const beneficiarySchema = new Schema(
       default: "PENDING",
       required: true,
     },
+
+    acknowledgementDeadline: {
+      type: Date,
+    },
+
+    notifiedAt: {
+      type: Date,
+    },
+
+    accessedAt: {
+      type: Date,
+    },
+
+    viewedAt: {
+      type: Date,
+    },
+
+    acknowledgedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
   },
 );
 
-export const Beneficiary = model("Beneficiary", beneficiarySchema);
+beneficiarySchema.index({
+  capsuleId: 1,
+  priority: 1,
+});
+
+beneficiarySchema.index({
+  userId: 1,
+});
+
+beneficiarySchema.index(
+  {
+    capsuleId: 1,
+    userId: 1,
+  },
+  {
+    unique: true,
+  },
+);
+
+export const Beneficiary = model(
+  "Beneficiary",
+  beneficiarySchema,
+);

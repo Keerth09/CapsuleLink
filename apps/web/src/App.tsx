@@ -1,6 +1,7 @@
-import { useEffect, useState, type FormEvent } from "react";
+﻿import { useEffect, useState, type FormEvent } from "react";
 
 import "./App.css";
+import CreateCapsulePage from "./CreateCapsulePage";
 
 type Page =
   | "home"
@@ -29,7 +30,7 @@ const initialCapsules: Capsule[] = [
     recipient: "Ananya",
     releaseDate: "Dec 25, 2026",
     status: "Sealed",
-    icon: "✦",
+    icon: "âœ¦",
   },
   {
     id: 2,
@@ -37,7 +38,7 @@ const initialCapsules: Capsule[] = [
     recipient: "My family",
     releaseDate: "Jan 10, 2027",
     status: "Waiting",
-    icon: "♡",
+    icon: "â™¡",
   },
   {
     id: 3,
@@ -45,7 +46,7 @@ const initialCapsules: Capsule[] = [
     recipient: "Rahul",
     releaseDate: "Aug 15, 2026",
     status: "Delivered",
-    icon: "☼",
+    icon: "â˜¼",
   },
 ];
 
@@ -56,73 +57,24 @@ function App() {
       : "home",
   );
 
-  const [capsules, setCapsules] =
+  const [capsules] =
     useState<Capsule[]>(initialCapsules);
 
   const [selectedCapsule, setSelectedCapsule] =
     useState<Capsule | null>(null);
 
   const [menuOpen, setMenuOpen] = useState(false);
-
-  const [step, setStep] = useState(1);
-
-  const [form, setForm] = useState({
-    title: "",
-    message: "",
-    recipient: "",
-    email: "",
-    releaseDate: "",
-    deliveryType: "date",
-  });
-
   const navigate = (nextPage: Page) => {
     setPage(nextPage);
     setMenuOpen(false);
 
     if (nextPage === "create") {
-      setStep(1);
     }
   };
 
-  const updateForm = (key: string, value: string) => {
-    setForm((current) => ({
-      ...current,
-      [key]: value,
-    }));
-  };
 
-  const createCapsule = () => {
-    if (!form.title.trim() || !form.recipient.trim()) {
-      return;
-    }
 
-    const newCapsule: Capsule = {
-      id: Date.now(),
-      title: form.title,
-      recipient: form.recipient,
-      releaseDate:
-        form.releaseDate || "When the time is right",
-      status: "Sealed",
-      icon: "✧",
-    };
 
-    setCapsules((current) => [
-      newCapsule,
-      ...current,
-    ]);
-
-    setForm({
-      title: "",
-      message: "",
-      recipient: "",
-      email: "",
-      releaseDate: "",
-      deliveryType: "date",
-    });
-
-    setPage("dashboard");
-    setStep(1);
-  };
 
   const openCapsule = (capsule: Capsule) => {
     setSelectedCapsule(capsule);
@@ -156,7 +108,7 @@ function App() {
             setMenuOpen((open) => !open)
           }
         >
-          {menuOpen ? "✕" : "☰"}
+          {menuOpen ? "âœ•" : "â˜°"}
         </button>
 
         <nav
@@ -195,7 +147,7 @@ function App() {
             className="button button-primary button-small"
             onClick={() => navigate("register")}
           >
-            Get started <span>↗</span>
+            Get started <span>â†—</span>
           </button>
         </div>
       </header>
@@ -228,13 +180,9 @@ function App() {
         )}
 
         {page === "create" && (
-          <CreatePage
-            step={step}
-            setStep={setStep}
-            form={form}
-            updateForm={updateForm}
-            createCapsule={createCapsule}
-            navigate={navigate}
+          <CreateCapsulePage
+            onBack={() => navigate("dashboard")}
+            onCreated={() => navigate("dashboard")}
           />
         )}
 
@@ -260,7 +208,7 @@ function App() {
         </p>
 
         <span className="footer-copy">
-          © 2026 Caps Link
+          Â© 2026 Caps Link
         </span>
       </footer>
 
@@ -283,7 +231,7 @@ function App() {
               onClick={closeCapsule}
               aria-label="Close"
             >
-              ✕
+              âœ•
             </button>
 
             <div className="modal-orb">
@@ -366,7 +314,7 @@ function HomePage({
               onClick={() => navigate("register")}
             >
               Seal your first capsule{" "}
-              <span>↗</span>
+              <span>â†—</span>
             </button>
 
             <button
@@ -378,7 +326,7 @@ function HomePage({
           </div>
 
           <div className="hero-note">
-            <span className="tiny-shield">◇</span>
+            <span className="tiny-shield">â—‡</span>
             Your memories. Your choices. Your trusted people.
           </div>
         </div>
@@ -392,7 +340,7 @@ function HomePage({
             <div className="capsule-light" />
 
             <div className="capsule-symbol">
-              ✦
+              âœ¦
             </div>
 
             <span className="capsule-label">
@@ -402,7 +350,7 @@ function HomePage({
 
           <div className="floating-card floating-card-top">
             <span className="floating-icon">
-              ♡
+              â™¡
             </span>
 
             <div>
@@ -413,7 +361,7 @@ function HomePage({
 
           <div className="floating-card floating-card-bottom">
             <span className="floating-check">
-              ✓
+              âœ“
             </span>
 
             <div>
@@ -422,23 +370,23 @@ function HomePage({
             </div>
           </div>
 
-          <div className="spark spark-one">✧</div>
-          <div className="spark spark-two">✦</div>
-          <div className="spark spark-three">·</div>
+          <div className="spark spark-one">âœ§</div>
+          <div className="spark spark-two">âœ¦</div>
+          <div className="spark spark-three">Â·</div>
         </div>
       </section>
 
       <section className="trust-strip">
         <div className="trust-item">
-          <span>◇</span> Private by design
+          <span>â—‡</span> Private by design
         </div>
 
         <div className="trust-item">
-          <span>⌁</span> Your trusted people
+          <span>âŒ</span> Your trusted people
         </div>
 
         <div className="trust-item">
-          <span>✧</span> Delivered with intention
+          <span>âœ§</span> Delivered with intention
         </div>
       </section>
 
@@ -461,21 +409,21 @@ function HomePage({
         <div className="steps-grid">
           <StepCard
             number="01"
-            icon="✎"
+            icon="âœŽ"
             title="Create your capsule"
             description="Write a message, add important details, and keep what matters in one place."
           />
 
           <StepCard
             number="02"
-            icon="♡"
+            icon="â™¡"
             title="Choose your person"
             description="Select someone you trust and set the conditions for your capsule to be released."
           />
 
           <StepCard
             number="03"
-            icon="✧"
+            icon="âœ§"
             title="Seal it with care"
             description="Review your choices and seal your capsule. Your plan stays yours to manage."
           />
@@ -486,7 +434,7 @@ function HomePage({
         <div className="promise-inner section-container">
           <div className="promise-orb">
             <div className="promise-orb-inner">
-              ✦
+              âœ¦
             </div>
           </div>
 
@@ -511,7 +459,7 @@ function HomePage({
               className="text-link"
               onClick={() => navigate("register")}
             >
-              Create a capsule <span>→</span>
+              Create a capsule <span>â†’</span>
             </button>
           </div>
         </div>
@@ -531,7 +479,7 @@ function HomePage({
         <div className="use-cases-grid">
           <div className="use-case-card">
             <span className="use-case-icon">
-              ♡
+              â™¡
             </span>
 
             <h3>Words for loved ones</h3>
@@ -544,7 +492,7 @@ function HomePage({
 
           <div className="use-case-card">
             <span className="use-case-icon">
-              ⌂
+              âŒ‚
             </span>
 
             <h3>Important information</h3>
@@ -557,7 +505,7 @@ function HomePage({
 
           <div className="use-case-card">
             <span className="use-case-icon">
-              ✧
+              âœ§
             </span>
 
             <h3>Memories worth keeping</h3>
@@ -572,7 +520,7 @@ function HomePage({
 
       <section className="cta-section section-container">
         <div className="cta-card">
-          <div className="cta-spark">✦</div>
+          <div className="cta-spark">âœ¦</div>
 
           <span className="eyebrow">
             YOUR STORY, YOUR WAY
@@ -590,7 +538,7 @@ function HomePage({
             className="button button-primary button-large"
             onClick={() => navigate("register")}
           >
-            Create your capsule <span>↗</span>
+            Create your capsule <span>â†—</span>
           </button>
         </div>
       </section>
@@ -748,7 +696,7 @@ function AuthPage({
     <section className="auth-layout section-container">
       <div className="auth-side">
         <div className="auth-side-orb">
-          ✦
+          âœ¦
         </div>
 
         <span className="eyebrow">
@@ -769,7 +717,7 @@ function AuthPage({
         </p>
 
         <div className="auth-side-quote">
-          <span>“</span>
+          <span>â€œ</span>
           Some things are too meaningful to leave to chance.
         </div>
       </div>
@@ -887,7 +835,7 @@ function AuthPage({
                   padding: "0.25rem",
                 }}
               >
-                {showPassword ? "🙈" : "👁"}
+                {showPassword ? "ðŸ™ˆ" : "ðŸ‘"}
               </button>
             </div>
           </label>
@@ -940,7 +888,7 @@ function AuthPage({
               : isRegister
                 ? "Create account"
                 : "Log in"}{" "}
-            {!isSubmitting && <span>→</span>}
+            {!isSubmitting && <span>â†’</span>}
           </button>
         </form>
 
@@ -1034,13 +982,13 @@ function DashboardPage({
           className="button button-primary button-large"
           onClick={() => navigate("create")}
         >
-          <span>＋</span> Create capsule
+          <span>ï¼‹</span> Create capsule
         </button>
       </div>
 
       <div className="dashboard-banner">
         <div className="banner-orb">
-          ✦
+          âœ¦
         </div>
 
         <div>
@@ -1061,7 +1009,7 @@ function DashboardPage({
           className="text-link"
           onClick={() => navigate("create")}
         >
-          Seal a capsule <span>→</span>
+          Seal a capsule <span>â†’</span>
         </button>
       </div>
 
@@ -1069,25 +1017,25 @@ function DashboardPage({
         <StatCard
           label="Total capsules"
           value={capsules.length}
-          icon="◈"
+          icon="â—ˆ"
         />
 
         <StatCard
           label="Sealed"
           value={sealedCount}
-          icon="✧"
+          icon="âœ§"
         />
 
         <StatCard
           label="Waiting"
           value={waitingCount}
-          icon="◷"
+          icon="â—·"
         />
 
         <StatCard
           label="Delivered"
           value={deliveredCount}
-          icon="✓"
+          icon="âœ“"
         />
       </div>
 
@@ -1104,7 +1052,7 @@ function DashboardPage({
           className="button button-outline"
           onClick={() => navigate("create")}
         >
-          ＋ New capsule
+          ï¼‹ New capsule
         </button>
       </div>
 
@@ -1146,7 +1094,7 @@ function DashboardPage({
       ) : (
         <div className="empty-state">
           <div className="empty-orb">
-            ✧
+            âœ§
           </div>
 
           <h3>No capsules here yet</h3>
@@ -1233,448 +1181,9 @@ function CapsuleCard({
         className="capsule-card-button"
         onClick={onOpen}
       >
-        View details <span>→</span>
+        View details <span>â†’</span>
       </button>
     </article>
-  );
-}
-
-function CreatePage({
-  step,
-  setStep,
-  form,
-  updateForm,
-  createCapsule,
-  navigate,
-}: {
-  step: number;
-  setStep: (step: number) => void;
-  form: {
-    title: string;
-    message: string;
-    recipient: string;
-    email: string;
-    releaseDate: string;
-    deliveryType: string;
-  };
-  updateForm: (
-    key: string,
-    value: string,
-  ) => void;
-  createCapsule: () => void;
-  navigate: (page: Page) => void;
-}) {
-  const nextStep = () =>
-    setStep(Math.min(step + 1, 4));
-
-  const previousStep = () =>
-    setStep(Math.max(step - 1, 1));
-
-  return (
-    <section className="create-layout section-container">
-      <button
-        className="back-link"
-        onClick={() => navigate("dashboard")}
-      >
-        ← Back to dashboard
-      </button>
-
-      <div className="create-heading">
-        <span className="eyebrow">
-          A NEW CAPSULE
-        </span>
-
-        <h1>
-          Seal something{" "}
-          <span className="gradient-text">
-            meaningful.
-          </span>
-        </h1>
-
-        <p>
-          Take your time. Every detail is yours to choose.
-        </p>
-      </div>
-
-      <div className="wizard">
-        <div className="wizard-progress">
-          {[
-            "Your message",
-            "Your person",
-            "Release plan",
-            "Review",
-          ].map((label, index) => {
-            const number = index + 1;
-
-            return (
-              <div
-                key={label}
-                className={`wizard-step ${
-                  step === number
-                    ? "wizard-current"
-                    : ""
-                } ${
-                  step > number
-                    ? "wizard-complete"
-                    : ""
-                }`}
-              >
-                <span className="wizard-number">
-                  {step > number
-                    ? "✓"
-                    : number}
-                </span>
-
-                <span className="wizard-label">
-                  {label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="wizard-panel">
-          {step === 1 && (
-            <div className="wizard-content">
-              <div className="wizard-panel-heading">
-                <span className="step-icon">
-                  ✎
-                </span>
-
-                <h2>
-                  What would you like to keep?
-                </h2>
-
-                <p>
-                  Give your capsule a name and write what you
-                  want to say.
-                </p>
-              </div>
-
-              <label className="field">
-                <span>Capsule title</span>
-
-                <input
-                  value={form.title}
-                  onChange={(event) =>
-                    updateForm(
-                      "title",
-                      event.target.value,
-                    )
-                  }
-                  placeholder="e.g. A letter for my future self"
-                  required
-                />
-              </label>
-
-              <label className="field">
-                <span>Your message</span>
-
-                <textarea
-                  value={form.message}
-                  onChange={(event) =>
-                    updateForm(
-                      "message",
-                      event.target.value,
-                    )
-                  }
-                  placeholder="Write something meaningful..."
-                  rows={7}
-                />
-              </label>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="wizard-content">
-              <div className="wizard-panel-heading">
-                <span className="step-icon">
-                  ♡
-                </span>
-
-                <h2>
-                  Who is this capsule for?
-                </h2>
-
-                <p>
-                  Choose the person you trust to receive this
-                  message.
-                </p>
-              </div>
-
-              <label className="field">
-                <span>Recipient name</span>
-
-                <input
-                  value={form.recipient}
-                  onChange={(event) =>
-                    updateForm(
-                      "recipient",
-                      event.target.value,
-                    )
-                  }
-                  placeholder="Enter their name"
-                  required
-                />
-              </label>
-
-              <label className="field">
-                <span>Recipient email</span>
-
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(event) =>
-                    updateForm(
-                      "email",
-                      event.target.value,
-                    )
-                  }
-                  placeholder="recipient@example.com"
-                />
-              </label>
-
-              <div className="info-note">
-                <span>◇</span>
-                The recipient will need to be enrolled and
-                verified before a real capsule can be activated.
-              </div>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="wizard-content">
-              <div className="wizard-panel-heading">
-                <span className="step-icon">
-                  ◷
-                </span>
-
-                <h2>
-                  When should it be released?
-                </h2>
-
-                <p>
-                  Choose a release plan for your capsule.
-                </p>
-              </div>
-
-              <div className="choice-grid">
-                <button
-                  type="button"
-                  className={`choice-card ${
-                    form.deliveryType === "date"
-                      ? "choice-selected"
-                      : ""
-                  }`}
-                  onClick={() =>
-                    updateForm(
-                      "deliveryType",
-                      "date",
-                    )
-                  }
-                >
-                  <span className="choice-icon">
-                    ▦
-                  </span>
-
-                  <strong>
-                    On a chosen date
-                  </strong>
-
-                  <small>
-                    Choose a specific date for your capsule.
-                  </small>
-                </button>
-
-                <button
-                  type="button"
-                  className={`choice-card ${
-                    form.deliveryType ===
-                    "checkin"
-                      ? "choice-selected"
-                      : ""
-                  }`}
-                  onClick={() =>
-                    updateForm(
-                      "deliveryType",
-                      "checkin",
-                    )
-                  }
-                >
-                  <span className="choice-icon">
-                    ◷
-                  </span>
-
-                  <strong>
-                    Check-in plan
-                  </strong>
-
-                  <small>
-                    Plan a future check-in arrangement.
-                  </small>
-                </button>
-              </div>
-
-              {form.deliveryType === "date" ? (
-                <label className="field">
-                  <span>Release date</span>
-
-                  <input
-                    type="date"
-                    value={form.releaseDate}
-                    onChange={(event) =>
-                      updateForm(
-                        "releaseDate",
-                        event.target.value,
-                      )
-                    }
-                  />
-                </label>
-              ) : (
-                <div className="info-note">
-                  <span>◇</span>
-                  Check-in-based release requires a configured
-                  check-in schedule and backend support.
-                </div>
-              )}
-            </div>
-          )}
-
-          {step === 4 && (
-            <div className="wizard-content">
-              <div className="wizard-panel-heading">
-                <span className="step-icon">
-                  ✧
-                </span>
-
-                <h2>
-                  Review your capsule
-                </h2>
-
-                <p>
-                  Make sure everything looks right before sealing.
-                </p>
-              </div>
-
-              <div className="review-card">
-                <div className="review-orb">
-                  ✦
-                </div>
-
-                <span className="eyebrow">
-                  YOUR CAPSULE
-                </span>
-
-                <h3>
-                  {form.title ||
-                    "Untitled capsule"}
-                </h3>
-
-                <p className="review-message">
-                  {form.message ||
-                    "No message added."}
-                </p>
-
-                <div className="review-divider" />
-
-                <div className="review-row">
-                  <span>Recipient</span>
-                  <strong>
-                    {form.recipient ||
-                      "Not selected"}
-                  </strong>
-                </div>
-
-                <div className="review-row">
-                  <span>Email</span>
-                  <strong>
-                    {form.email ||
-                      "Not provided"}
-                  </strong>
-                </div>
-
-                <div className="review-row">
-                  <span>Release plan</span>
-
-                  <strong>
-                    {form.deliveryType ===
-                    "date"
-                      ? "Chosen date"
-                      : "Check-in plan"}
-                  </strong>
-                </div>
-
-                <div className="review-row">
-                  <span>Release date</span>
-
-                  <strong>
-                    {form.releaseDate ||
-                      "Not selected"}
-                  </strong>
-                </div>
-              </div>
-
-              <div className="info-note">
-                <span>◇</span>
-                This creates a local preview capsule only.
-                Backend storage, encryption, and delivery are
-                not connected yet.
-              </div>
-            </div>
-          )}
-
-          <div className="wizard-actions">
-            {step > 1 ? (
-              <button
-                type="button"
-                className="button button-outline"
-                onClick={previousStep}
-              >
-                ← Back
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="button button-outline"
-                onClick={() =>
-                  navigate("dashboard")
-                }
-              >
-                Cancel
-              </button>
-            )}
-
-            {step < 4 ? (
-              <button
-                type="button"
-                className="button button-primary"
-                onClick={nextStep}
-                disabled={
-                  (step === 1 &&
-                    !form.title.trim()) ||
-                  (step === 2 &&
-                    !form.recipient.trim())
-                }
-              >
-                Continue <span>→</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="button button-primary"
-                onClick={createCapsule}
-                disabled={
-                  !form.title.trim() ||
-                  !form.recipient.trim()
-                }
-              >
-                Seal capsule <span>✧</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -1689,7 +1198,7 @@ function ReceiverPage({
     <section className="receiver-layout section-container">
       <div className="receiver-card">
         <div className="receiver-orb">
-          ✧
+          âœ§
         </div>
 
         <span className="eyebrow">
@@ -1732,7 +1241,7 @@ function ReceiverPage({
             type="submit"
             disabled={!code.trim()}
           >
-            Continue to capsule <span>→</span>
+            Continue to capsule <span>â†’</span>
           </button>
         </form>
 
@@ -1745,7 +1254,7 @@ function ReceiverPage({
           className="text-link"
           onClick={() => navigate("home")}
         >
-          ← Back to home
+          â† Back to home
         </button>
       </div>
     </section>
@@ -1842,7 +1351,7 @@ function VerifyEmailPage({
 
         {status === "verifying" && (
           <div className="info-note">
-            <span>◇</span>
+            <span>â—‡</span>
             Please wait while we verify your email address.
           </div>
         )}
@@ -1852,7 +1361,7 @@ function VerifyEmailPage({
             className="button button-primary button-full button-large"
             onClick={() => navigate("login")}
           >
-            Continue to login <span>→</span>
+            Continue to login <span>â†’</span>
           </button>
         )}
 
@@ -1861,7 +1370,7 @@ function VerifyEmailPage({
             className="button button-primary button-full button-large"
             onClick={() => navigate("login")}
           >
-            Go to login <span>→</span>
+            Go to login <span>â†’</span>
           </button>
         )}
       </div>
@@ -1870,3 +1379,8 @@ function VerifyEmailPage({
 }
 
 export default App;
+
+
+
+
+
