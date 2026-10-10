@@ -848,13 +848,31 @@ router.patch(
             },
           }).lean();
 
-        if (beneficiaries.length === 0) {
-          res.status(400).json({
-            error:
-              "BENEFICIARY_REQUIRED_BEFORE_ACTIVATION",
-          });
-          return;
-        }
+if (beneficiaries.length !== 3) {
+  res.status(400).json({
+    error: "THREE_BENEFICIARIES_REQUIRED",
+    message:
+      "Exactly three enrolled or authorized beneficiaries are required.",
+  });
+  return;
+}
+
+const priorities = beneficiaries
+  .map((beneficiary) => beneficiary.priority)
+  .sort((a, b) => a - b);
+
+if (
+  priorities[0] !== 1 ||
+  priorities[1] !== 2 ||
+  priorities[2] !== 3
+) {
+  res.status(400).json({
+    error: "INVALID_BENEFICIARY_PRIORITIES",
+    message:
+      "Beneficiary priorities must be 1, 2, and 3.",
+  });
+  return;
+}
 
         const envelopeCount =
           await CapsuleKeyEnvelope.countDocuments({

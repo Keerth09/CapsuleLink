@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 import "./App.css";
 import CreateCapsulePage from "./CreateCapsulePage";
@@ -30,7 +30,7 @@ const initialCapsules: Capsule[] = [
     recipient: "Ananya",
     releaseDate: "Dec 25, 2026",
     status: "Sealed",
-    icon: "âœ¦",
+    icon: "✦",
   },
   {
     id: 2,
@@ -38,7 +38,7 @@ const initialCapsules: Capsule[] = [
     recipient: "My family",
     releaseDate: "Jan 10, 2027",
     status: "Waiting",
-    icon: "â™¡",
+    icon: "♡",
   },
   {
     id: 3,
@@ -46,7 +46,7 @@ const initialCapsules: Capsule[] = [
     recipient: "Rahul",
     releaseDate: "Aug 15, 2026",
     status: "Delivered",
-    icon: "â˜¼",
+    icon: "☼",
   },
 ];
 
@@ -65,12 +65,9 @@ function App() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = (nextPage: Page) => {
-    setPage(nextPage);
-    setMenuOpen(false);
-
-    if (nextPage === "create") {
-    }
-  };
+  setPage(nextPage);
+  setMenuOpen(false);
+};
 
 
 
@@ -108,7 +105,7 @@ function App() {
             setMenuOpen((open) => !open)
           }
         >
-          {menuOpen ? "âœ•" : "â˜°"}
+          {menuOpen ? "✕" : "☰"}
         </button>
 
         <nav
@@ -147,7 +144,7 @@ function App() {
             className="button button-primary button-small"
             onClick={() => navigate("register")}
           >
-            Get started <span>â†—</span>
+            Get started <span>↗</span>
           </button>
         </div>
       </header>
@@ -208,7 +205,7 @@ function App() {
         </p>
 
         <span className="footer-copy">
-          Â© 2026 Caps Link
+          © 2026 Caps Link
         </span>
       </footer>
 
@@ -231,7 +228,7 @@ function App() {
               onClick={closeCapsule}
               aria-label="Close"
             >
-              âœ•
+              ✕
             </button>
 
             <div className="modal-orb">
@@ -314,7 +311,7 @@ function HomePage({
               onClick={() => navigate("register")}
             >
               Seal your first capsule{" "}
-              <span>â†—</span>
+              <span>↗</span>
             </button>
 
             <button
@@ -326,7 +323,7 @@ function HomePage({
           </div>
 
           <div className="hero-note">
-            <span className="tiny-shield">â—‡</span>
+            <span className="tiny-shield">◇</span>
             Your memories. Your choices. Your trusted people.
           </div>
         </div>
@@ -340,7 +337,7 @@ function HomePage({
             <div className="capsule-light" />
 
             <div className="capsule-symbol">
-              âœ¦
+              ✦
             </div>
 
             <span className="capsule-label">
@@ -350,7 +347,7 @@ function HomePage({
 
           <div className="floating-card floating-card-top">
             <span className="floating-icon">
-              â™¡
+              ♡
             </span>
 
             <div>
@@ -361,7 +358,7 @@ function HomePage({
 
           <div className="floating-card floating-card-bottom">
             <span className="floating-check">
-              âœ“
+              ✓
             </span>
 
             <div>
@@ -370,23 +367,23 @@ function HomePage({
             </div>
           </div>
 
-          <div className="spark spark-one">âœ§</div>
-          <div className="spark spark-two">âœ¦</div>
-          <div className="spark spark-three">Â·</div>
+          <div className="spark spark-one">✧</div>
+          <div className="spark spark-two">✦</div>
+          <div className="spark spark-three">·</div>
         </div>
       </section>
 
       <section className="trust-strip">
         <div className="trust-item">
-          <span>â—‡</span> Private by design
+          <span>◇</span> Private by design
         </div>
 
         <div className="trust-item">
-          <span>âŒ</span> Your trusted people
+          <span>⌁</span> Your trusted people
         </div>
 
         <div className="trust-item">
-          <span>âœ§</span> Delivered with intention
+          <span>✧</span> Delivered with intention
         </div>
       </section>
 
@@ -409,21 +406,21 @@ function HomePage({
         <div className="steps-grid">
           <StepCard
             number="01"
-            icon="âœŽ"
+            icon="✎"
             title="Create your capsule"
             description="Write a message, add important details, and keep what matters in one place."
           />
 
           <StepCard
             number="02"
-            icon="â™¡"
+            icon="♡"
             title="Choose your person"
             description="Select someone you trust and set the conditions for your capsule to be released."
           />
 
           <StepCard
             number="03"
-            icon="âœ§"
+            icon="✧"
             title="Seal it with care"
             description="Review your choices and seal your capsule. Your plan stays yours to manage."
           />
@@ -434,7 +431,7 @@ function HomePage({
         <div className="promise-inner section-container">
           <div className="promise-orb">
             <div className="promise-orb-inner">
-              âœ¦
+              ✦
             </div>
           </div>
 
@@ -459,7 +456,7 @@ function HomePage({
               className="text-link"
               onClick={() => navigate("register")}
             >
-              Create a capsule <span>â†’</span>
+              Create a capsule <span>→</span>
             </button>
           </div>
         </div>
@@ -479,7 +476,7 @@ function HomePage({
         <div className="use-cases-grid">
           <div className="use-case-card">
             <span className="use-case-icon">
-              â™¡
+              ♡
             </span>
 
             <h3>Words for loved ones</h3>
@@ -492,7 +489,7 @@ function HomePage({
 
           <div className="use-case-card">
             <span className="use-case-icon">
-              âŒ‚
+              ⌂
             </span>
 
             <h3>Important information</h3>
@@ -505,7 +502,7 @@ function HomePage({
 
           <div className="use-case-card">
             <span className="use-case-icon">
-              âœ§
+              ✧
             </span>
 
             <h3>Memories worth keeping</h3>
@@ -520,7 +517,7 @@ function HomePage({
 
       <section className="cta-section section-container">
         <div className="cta-card">
-          <div className="cta-spark">âœ¦</div>
+          <div className="cta-spark">✦</div>
 
           <span className="eyebrow">
             YOUR STORY, YOUR WAY
@@ -538,7 +535,7 @@ function HomePage({
             className="button button-primary button-large"
             onClick={() => navigate("register")}
           >
-            Create your capsule <span>â†—</span>
+            Create your capsule <span>↗</span>
           </button>
         </div>
       </section>
@@ -696,7 +693,7 @@ function AuthPage({
     <section className="auth-layout section-container">
       <div className="auth-side">
         <div className="auth-side-orb">
-          âœ¦
+          ✦
         </div>
 
         <span className="eyebrow">
@@ -717,7 +714,7 @@ function AuthPage({
         </p>
 
         <div className="auth-side-quote">
-          <span>â€œ</span>
+          <span>“</span>
           Some things are too meaningful to leave to chance.
         </div>
       </div>
@@ -835,7 +832,7 @@ function AuthPage({
                   padding: "0.25rem",
                 }}
               >
-                {showPassword ? "ðŸ™ˆ" : "ðŸ‘"}
+                {showPassword ? "🙈" : "👁"}
               </button>
             </div>
           </label>
@@ -888,7 +885,7 @@ function AuthPage({
               : isRegister
                 ? "Create account"
                 : "Log in"}{" "}
-            {!isSubmitting && <span>â†’</span>}
+            {!isSubmitting && <span>→</span>}
           </button>
         </form>
 
@@ -982,13 +979,13 @@ function DashboardPage({
           className="button button-primary button-large"
           onClick={() => navigate("create")}
         >
-          <span>ï¼‹</span> Create capsule
+          <span>＋</span> Create capsule
         </button>
       </div>
 
       <div className="dashboard-banner">
         <div className="banner-orb">
-          âœ¦
+          ✦
         </div>
 
         <div>
@@ -1009,7 +1006,7 @@ function DashboardPage({
           className="text-link"
           onClick={() => navigate("create")}
         >
-          Seal a capsule <span>â†’</span>
+          Seal a capsule <span>→</span>
         </button>
       </div>
 
@@ -1017,25 +1014,25 @@ function DashboardPage({
         <StatCard
           label="Total capsules"
           value={capsules.length}
-          icon="â—ˆ"
+          icon="◈"
         />
 
         <StatCard
           label="Sealed"
           value={sealedCount}
-          icon="âœ§"
+          icon="✧"
         />
 
         <StatCard
           label="Waiting"
           value={waitingCount}
-          icon="â—·"
+          icon="◷"
         />
 
         <StatCard
           label="Delivered"
           value={deliveredCount}
-          icon="âœ“"
+          icon="✓"
         />
       </div>
 
@@ -1052,7 +1049,7 @@ function DashboardPage({
           className="button button-outline"
           onClick={() => navigate("create")}
         >
-          ï¼‹ New capsule
+          ＋ New capsule
         </button>
       </div>
 
@@ -1094,7 +1091,7 @@ function DashboardPage({
       ) : (
         <div className="empty-state">
           <div className="empty-orb">
-            âœ§
+            ✧
           </div>
 
           <h3>No capsules here yet</h3>
@@ -1181,7 +1178,7 @@ function CapsuleCard({
         className="capsule-card-button"
         onClick={onOpen}
       >
-        View details <span>â†’</span>
+        View details <span>→</span>
       </button>
     </article>
   );
@@ -1198,7 +1195,7 @@ function ReceiverPage({
     <section className="receiver-layout section-container">
       <div className="receiver-card">
         <div className="receiver-orb">
-          âœ§
+          ✧
         </div>
 
         <span className="eyebrow">
@@ -1241,7 +1238,7 @@ function ReceiverPage({
             type="submit"
             disabled={!code.trim()}
           >
-            Continue to capsule <span>â†’</span>
+            Continue to capsule <span>→</span>
           </button>
         </form>
 
@@ -1254,7 +1251,7 @@ function ReceiverPage({
           className="text-link"
           onClick={() => navigate("home")}
         >
-          â† Back to home
+          ← Back to home
         </button>
       </div>
     </section>
@@ -1279,13 +1276,9 @@ function VerifyEmailPage({
       window.location.search,
     ).get("token");
 
-    if (!token) {
-      setStatus("error");
-      setMessage(
-        "Verification token is missing.",
-      );
-      return;
-    }
+  if (!token) {
+  return;
+}
 
     fetch("/api/v1/auth/verify-email", {
       method: "POST",
@@ -1351,7 +1344,7 @@ function VerifyEmailPage({
 
         {status === "verifying" && (
           <div className="info-note">
-            <span>â—‡</span>
+            <span>◇</span>
             Please wait while we verify your email address.
           </div>
         )}
@@ -1361,7 +1354,7 @@ function VerifyEmailPage({
             className="button button-primary button-full button-large"
             onClick={() => navigate("login")}
           >
-            Continue to login <span>â†’</span>
+            Continue to login <span>→</span>
           </button>
         )}
 
@@ -1370,7 +1363,7 @@ function VerifyEmailPage({
             className="button button-primary button-full button-large"
             onClick={() => navigate("login")}
           >
-            Go to login <span>â†’</span>
+            Go to login <span>→</span>
           </button>
         )}
       </div>

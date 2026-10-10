@@ -1,7 +1,5 @@
-﻿import {
-  useState,
-  type FormEvent,
-} from "react";
+﻿
+import { useState, type FormEvent } from "react";
 
 import {
   encryptCapsuleContent,
@@ -20,7 +18,84 @@ type BeneficiaryLookup = {
   keyVersion: number;
 };
 
+type TimeUnit = "hours" | "days" | "months";
+
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+type JsonObject = { [key: string]: JsonValue };
+
 const API = "/api/v1";
+
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+const MONTH_MS = 30 * DAY_MS;
+
+function durationToMs(value: string, unit: TimeUnit): number {
+  const amount = Number(value);
+
+  const multiplier =
+    unit === "hours"
+      ? HOUR_MS
+      : unit === "days"
+        ? DAY_MS
+        : MONTH_MS;
+
+  return amount * multiplier;
+}
+
+async function readJson(response: Response): Promise<JsonObject> {
+  try {
+    const data: unknown = await response.json();
+
+    if (
+      data !== null &&
+      typeof data === "object" &&
+      !Array.isArray(data)
+    ) {
+      return data as JsonObject;
+    }
+
+    return {};
+  } catch {
+    return {};
+  }
+}
+
+function getString(
+  object: JsonObject,
+  key: string,
+): string | undefined {
+  const value = object[key];
+  return typeof value === "string" ? value : undefined;
+}
+
+function getNestedString(
+  object: JsonObject,
+  parent: string,
+  key: string,
+): string | undefined {
+  const value = object[parent];
+
+  if (
+    value === null ||
+    typeof value !== "object" ||
+    Array.isArray(value)
+  ) {
+    return undefined;
+  }
+
+  const nestedValue = value[key];
+
+  return typeof nestedValue === "string"
+    ? nestedValue
+    : undefined;
+}
 
 export default function CreateCapsulePage({
   onBack,
@@ -28,264 +103,243 @@ export default function CreateCapsulePage({
 }: CreateCapsulePageProps) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [beneficiaryEmail, setBeneficiaryEmail] =
-    useState("");
 
-  const [checkInInterval, setCheckInInterval] =
-    useState("86400000");
+  const [emails, setEmails] = useState(["", "", ""]);
 
-  const [warningLeadTime, setWarningLeadTime] =
-    useState("21600000");
+  const [intervalValue, setIntervalValue] = useState("30");
+  const [intervalUnit, setIntervalUnit] =
+    useState<TimeUnit>("days");
 
-  const [gracePeriod, setGracePeriod] =
-    useState("86400000");
+  const [warningValue, setWarningValue] = useState("3");
+  const [warningUnit, setWarningUnit] =
+    useState<TimeUnit>("days");
 
-  const [creating, setCreating] =
-    useState(false);
+  const [graceValue, setGraceValue] = useState("2");
+  const [graceUnit, setGraceUnit] =
+    useState<TimeUnit>("days");
 
+  const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  async function readJson(
-    response: Response,
-  ): Promise<Record<string, any>> {
-    try {
-      return await response.json();
-    } catch {
-      return {};
-    }
+  function updateEmail(index: number, value: string) {
+    setEmails((current) =>
+      current.map((email, i) => (i === index ? value : email)),
+    );
   }
 
   async function createCapsule(
     event: FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
-
     setError("");
     setSuccess("");
 
     const cleanTitle = title.trim();
     const cleanContent = content.trim();
-    const cleanEmail =
-      beneficiaryEmail.trim().toLowerCase();
+    const cleanEmails = emails.map((email) =>
+      email.trim().toLowerCase(),
+    );
 
-    if (!cleanTitle) {
-      setError("Enter a capsule title.");
+    if (!cleanTitle || !cleanContent) {
+      setError("Enter a capsule title and secret content.");
       return;
     }
 
-    if (!cleanContent) {
-      setError("Enter the capsule content.");
+    if (cleanEmails.some((email) => !email)) {
+      setError("Enter all three beneficiary email addresses.");
       return;
     }
 
-    if (!cleanEmail) {
-      setError("Enter the beneficiary email.");
+    if (new Set(cleanEmails).size !== 3) {
+      setError("Each beneficiary must have a different email address.");
       return;
     }
 
-    const interval = Number(checkInInterval);
-    const warning = Number(warningLeadTime);
-    const grace = Number(gracePeriod);
+    const interval = durationToMs(intervalValue, intervalUnit);
+    const warning = durationToMs(warningValue, warningUnit);
+    const grace = durationToMs(graceValue, graceUnit);
 
-    if (!Number.isFinite(interval) || interval <= 0) {
-      setError("Invalid check-in interval.");
+    if (!Number.isSafeInteger(interval) || interval <= 0) {
+      setError("The inactivity period must be greater than zero.");
       return;
     }
 
     if (
-      !Number.isFinite(warning) ||
+      !Number.isSafeInteger(warning) ||
       warning < 0 ||
       warning >= interval
     ) {
       setError(
-        "Warning lead time must be smaller than the check-in interval.",
+        "Warning lead time must be non-negative and shorter than the inactivity period.",
       );
       return;
     }
 
-    if (!Number.isFinite(grace) || grace < 0) {
-      setError("Invalid grace period.");
+    if (!Number.isSafeInteger(grace) || grace < 0) {
+      setError("The grace period must be zero or greater.");
       return;
     }
 
     setCreating(true);
 
     try {
-      /*
-       * ----------------------------------------------------------
-       * STEP 1
-       * Resolve beneficiary identity.
-       * ----------------------------------------------------------
-       */
+      // Step 1: Resolve all three beneficiary identities.
+      const beneficiaries: BeneficiaryLookup[] = [];
 
-      const beneficiaryResponse =
-        await fetch(
-          `${API}/beneficiary/lookup?email=${encodeURIComponent(cleanEmail)}`,
-          {
-            credentials: "include",
-          },
+      for (const email of cleanEmails) {
+        const response = await fetch(
+          `${API}/beneficiary/lookup?email=${encodeURIComponent(email)}`,
+          { credentials: "include" },
         );
 
-      const beneficiaryData =
-        await readJson(beneficiaryResponse);
+        const data = await readJson(response);
 
-      if (!beneficiaryResponse.ok) {
-        throw new Error(
-          beneficiaryData.error ||
-            "Beneficiary could not be found.",
-        );
+        if (!response.ok) {
+          throw new Error(
+            `${email}: ${
+              getString(data, "error") ??
+              "Beneficiary lookup failed."
+            }`,
+          );
+        }
+
+        const rawBeneficiary = data.beneficiary;
+
+        if (
+          rawBeneficiary === null ||
+          typeof rawBeneficiary !== "object" ||
+          Array.isArray(rawBeneficiary)
+        ) {
+          throw new Error(
+            `Beneficiary details were not returned for ${email}.`,
+          );
+        }
+
+        const userId = getString(rawBeneficiary, "userId");
+        const publicKey = getString(rawBeneficiary, "publicKey");
+        const beneficiaryEmail = getString(rawBeneficiary, "email");
+        const keyVersion = rawBeneficiary.keyVersion;
+
+        if (
+          !userId ||
+          !publicKey ||
+          typeof keyVersion !== "number" ||
+          !Number.isFinite(keyVersion)
+        ) {
+          throw new Error(
+            `Cryptographic identity is unavailable for ${email}.`,
+          );
+        }
+
+        beneficiaries.push({
+          userId,
+          email: beneficiaryEmail ?? email,
+          publicKey,
+          keyVersion,
+        });
       }
-
-      const beneficiary =
-        beneficiaryData.beneficiary as
-          | BeneficiaryLookup
-          | undefined;
 
       if (
-        !beneficiary ||
-        !beneficiary.userId ||
-        !beneficiary.publicKey
+        new Set(beneficiaries.map((beneficiary) => beneficiary.userId))
+          .size !== 3
       ) {
         throw new Error(
-          "Beneficiary cryptographic identity is unavailable.",
+          "Each priority must belong to a different user.",
         );
       }
 
-      /*
-       * ----------------------------------------------------------
-       * STEP 2
-       * Obtain owner's public identity.
-       * ----------------------------------------------------------
-       */
+      // Step 2: Obtain the owner's public identity.
+      const identityResponse = await fetch(`${API}/identity`, {
+        credentials: "include",
+      });
 
-      const identityResponse =
-        await fetch(`${API}/identity`, {
-          credentials: "include",
-        });
-
-      const identityData =
-        await readJson(identityResponse);
+      const identity = await readJson(identityResponse);
 
       if (
         !identityResponse.ok ||
-        !identityData.configured ||
-        typeof identityData.publicKey !== "string"
+        identity.configured !== true ||
+        typeof identity.publicKey !== "string"
       ) {
         throw new Error(
           "Complete cryptographic identity setup before creating a capsule.",
         );
       }
 
-      /*
-       * ----------------------------------------------------------
-       * STEP 3
-       * Encrypt plaintext locally.
-       *
-       * Plaintext never goes to the API.
-       * ----------------------------------------------------------
-       */
+      const ownerPublicKey = identity.publicKey;
+      const ownerKeyVersion =
+        typeof identity.keyVersion === "number"
+          ? identity.keyVersion
+          : 1;
 
+      // Step 3: Encrypt the secret in the browser.
+      // Plaintext is never sent to the API.
       const encryptedResult =
         await encryptCapsuleContent(cleanContent);
 
-      const encrypted =
-        encryptedResult.encrypted;
-
+      const encrypted = encryptedResult.encrypted;
       const dek = encryptedResult.dek;
 
-      /*
-       * ----------------------------------------------------------
-       * STEP 4
-       * Wrap DEK for owner.
-       * ----------------------------------------------------------
-       */
+      // Step 4: Wrap the encryption key for the owner.
+      const ownerWrapped = await wrapDekForRecipient(
+        dek,
+        ownerPublicKey,
+        ownerKeyVersion,
+      );
 
-      const ownerWrapped =
-        await wrapDekForRecipient(
-          dek,
-          identityData.publicKey,
-          identityData.keyVersion ?? 1,
-        );
-
-      /*
-       * ----------------------------------------------------------
-       * STEP 5
-       * Create encrypted DRAFT.
-       * ----------------------------------------------------------
-       */
-
-      const createResponse =
-        await fetch(`${API}/capsules`, {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
+      // Step 5: Create the encrypted draft.
+      const createResponse = await fetch(`${API}/capsules`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: cleanTitle,
+          ciphertext: encrypted.ciphertext,
+          iv: encrypted.iv,
+          cryptoVersion: encrypted.cryptoVersion,
+          contentAlgorithm: encrypted.contentAlgorithm,
+          ownerKeyEnvelope: {
+            wrappedDek: ownerWrapped.wrappedDek,
+            keyWrapAlgorithm: ownerWrapped.keyWrapAlgorithm,
+            keyVersion: ownerWrapped.keyVersion,
           },
-          body: JSON.stringify({
-            title: cleanTitle,
-            ciphertext: encrypted.ciphertext,
-            iv: encrypted.iv,
-            cryptoVersion: encrypted.cryptoVersion,
-            contentAlgorithm:
-              encrypted.contentAlgorithm,
-            ownerKeyEnvelope: {
-              wrappedDek:
-                ownerWrapped.wrappedDek,
-              keyWrapAlgorithm:
-                ownerWrapped.keyWrapAlgorithm,
-              keyVersion:
-                ownerWrapped.keyVersion,
-            },
-            checkInInterval: interval,
-            warningLeadTime: warning,
-            gracePeriod: grace,
-          }),
-        });
+          checkInInterval: interval,
+          warningLeadTime: warning,
+          gracePeriod: grace,
+        }),
+      });
 
-      const createData =
-        await readJson(createResponse);
+      const created = await readJson(createResponse);
 
       if (!createResponse.ok) {
         throw new Error(
-          createData.error ||
+          getString(created, "error") ??
             "Failed to create encrypted capsule.",
         );
       }
 
       const capsuleId =
-        createData?.capsule?._id ??
-        createData?.capsule?.id;
+        getNestedString(created, "capsule", "_id") ??
+        getNestedString(created, "capsule", "id");
 
-      if (typeof capsuleId !== "string") {
-        throw new Error(
-          "Capsule ID was not returned by the API.",
-        );
+      if (!capsuleId) {
+        throw new Error("Capsule ID was not returned by the API.");
       }
 
-      /*
-       * ----------------------------------------------------------
-       * STEP 6
-       * Wrap the SAME DEK for beneficiary.
-       * ----------------------------------------------------------
-       */
+      // Step 6: Wrap the same DEK for each beneficiary.
+      // Priority 1 is first, then 2, then 3.
+      for (let index = 0; index < beneficiaries.length; index += 1) {
+        const beneficiary = beneficiaries[index];
 
-      const beneficiaryWrapped =
-        await wrapDekForRecipient(
+        const wrapped = await wrapDekForRecipient(
           dek,
           beneficiary.publicKey,
           beneficiary.keyVersion,
         );
 
-      /*
-       * ----------------------------------------------------------
-       * STEP 7
-       * Store beneficiary + wrapped DEK.
-       * ----------------------------------------------------------
-       */
-
-      const addBeneficiaryResponse =
-        await fetch(
+        const addResponse = await fetch(
           `${API}/capsules/${capsuleId}/beneficiaries`,
           {
             method: "POST",
@@ -295,77 +349,62 @@ export default function CreateCapsulePage({
             },
             body: JSON.stringify({
               userId: beneficiary.userId,
-              priority: 1,
-              wrappedDek:
-                beneficiaryWrapped.wrappedDek,
-              keyWrapAlgorithm:
-                beneficiaryWrapped.keyWrapAlgorithm,
-              keyVersion:
-                beneficiaryWrapped.keyVersion,
+              priority: index + 1,
+              wrappedDek: wrapped.wrappedDek,
+              keyWrapAlgorithm: wrapped.keyWrapAlgorithm,
+              keyVersion: wrapped.keyVersion,
             }),
           },
         );
 
-      const addBeneficiaryData =
-        await readJson(
-          addBeneficiaryResponse,
-        );
+        const addData = await readJson(addResponse);
 
-      if (!addBeneficiaryResponse.ok) {
-        throw new Error(
-          addBeneficiaryData.error ||
-            "Failed to add beneficiary.",
-        );
+        if (!addResponse.ok) {
+          throw new Error(
+            `Could not add priority ${index + 1} beneficiary: ${
+              getString(addData, "error") ?? "Request failed."
+            }`,
+          );
+        }
       }
 
-      /*
-       * ----------------------------------------------------------
-       * STEP 8
-       * Activate only after beneficiary envelope exists.
-       * ----------------------------------------------------------
-       */
-
-      const activateResponse =
-        await fetch(
-          `${API}/capsules/${capsuleId}`,
-          {
-            method: "PATCH",
-            credentials: "include",
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-            body: JSON.stringify({
-              status: "ACTIVE",
-            }),
+      // Step 7: Activate only after all three recipients are added.
+      const activateResponse = await fetch(
+        `${API}/capsules/${capsuleId}`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify({ status: "ACTIVE" }),
+        },
+      );
 
-      const activateData =
-        await readJson(activateResponse);
+      const activated = await readJson(activateResponse);
 
       if (!activateResponse.ok) {
         throw new Error(
-          activateData.error ||
+          getString(activated, "error") ??
             "Capsule could not be activated.",
         );
       }
 
       setSuccess(
-        "Capsule encrypted and activated successfully.",
+        "Capsule encrypted and activated with three beneficiaries in priority order.",
       );
 
       setTitle("");
       setContent("");
-      setBeneficiaryEmail("");
+      setEmails(["", "", ""]);
 
       window.setTimeout(() => {
         onCreated();
       }, 900);
-    } catch (error) {
+    } catch (err) {
       setError(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : "Capsule creation failed.",
       );
     } finally {
@@ -388,25 +427,20 @@ export default function CreateCapsulePage({
         <h1>Create Capsule</h1>
 
         <p className="muted">
-          Your secret is encrypted in your browser.
-          CapsuleLink receives only ciphertext and
-          encrypted key envelopes.
+          Your secret is encrypted in your browser. CapsuleLink receives
+          only ciphertext and encrypted key envelopes.
         </p>
 
-        <form
-          onSubmit={createCapsule}
-          className="form-stack"
-        >
+        <form onSubmit={createCapsule} className="form-stack">
           <label>
             Capsule title
             <input
               value={title}
-              onChange={(event) =>
-                setTitle(event.target.value)
-              }
+              onChange={(event) => setTitle(event.target.value)}
               maxLength={200}
               disabled={creating}
               placeholder="Emergency instructions"
+              required
             />
           </label>
 
@@ -414,75 +448,121 @@ export default function CreateCapsulePage({
             Secret content
             <textarea
               value={content}
-              onChange={(event) =>
-                setContent(event.target.value)
-              }
+              onChange={(event) => setContent(event.target.value)}
               disabled={creating}
               rows={10}
               placeholder="Write the information you want to protect..."
+              required
             />
           </label>
 
-          <label>
-            Beneficiary email
-            <input
-              type="email"
-              value={beneficiaryEmail}
-              onChange={(event) =>
-                setBeneficiaryEmail(
-                  event.target.value,
-                )
-              }
-              disabled={creating}
-              placeholder="beneficiary@example.com"
-              autoComplete="email"
-            />
-          </label>
+          <h2>Beneficiaries</h2>
+
+          <p className="muted">
+            Use three registered CapsuleLink users. Priority 1 is first,
+            followed by priority 2 and priority 3. The backend must enforce
+            this order during release.
+          </p>
+
+          {emails.map((email, index) => (
+            <label key={index}>
+              Beneficiary {index + 1} email — Priority {index + 1}
+              <input
+                type="email"
+                value={email}
+                onChange={(event) =>
+                  updateEmail(index, event.target.value)
+                }
+                disabled={creating}
+                placeholder={`beneficiary${index + 1}@example.com`}
+                autoComplete="email"
+                required
+              />
+            </label>
+          ))}
+
+          <h2>Inactivity schedule</h2>
+
+          <p className="muted">
+            A check-in resets the inactivity timer. One month is treated as
+            30 days.
+          </p>
 
           <div className="form-grid">
             <label>
-              Check-in interval (ms)
+              Inactivity period
               <input
                 type="number"
-                min="1000"
-                value={checkInInterval}
+                min="1"
+                step="1"
+                value={intervalValue}
                 onChange={(event) =>
-                  setCheckInInterval(
-                    event.target.value,
-                  )
+                  setIntervalValue(event.target.value)
                 }
                 disabled={creating}
+                required
               />
+              <select
+                value={intervalUnit}
+                onChange={(event) =>
+                  setIntervalUnit(event.target.value as TimeUnit)
+                }
+                disabled={creating}
+              >
+                <option value="days">Days</option>
+                <option value="months">Months (30 days each)</option>
+                <option value="hours">Hours</option>
+              </select>
             </label>
 
             <label>
-              Warning lead time (ms)
+              Owner warning lead time
               <input
                 type="number"
                 min="0"
-                value={warningLeadTime}
+                step="1"
+                value={warningValue}
                 onChange={(event) =>
-                  setWarningLeadTime(
-                    event.target.value,
-                  )
+                  setWarningValue(event.target.value)
                 }
                 disabled={creating}
+                required
               />
+              <select
+                value={warningUnit}
+                onChange={(event) =>
+                  setWarningUnit(event.target.value as TimeUnit)
+                }
+                disabled={creating}
+              >
+                <option value="hours">Hours</option>
+                <option value="days">Days</option>
+              </select>
             </label>
 
             <label>
-              Grace period (ms)
+              Grace period after deadline
               <input
                 type="number"
                 min="0"
-                value={gracePeriod}
+                step="1"
+                value={graceValue}
                 onChange={(event) =>
-                  setGracePeriod(
-                    event.target.value,
-                  )
+                  setGraceValue(event.target.value)
                 }
                 disabled={creating}
+                required
               />
+              <select
+                value={graceUnit}
+                onChange={(event) =>
+                  setGraceUnit(event.target.value as TimeUnit)
+                }
+                disabled={creating}
+              >
+                <option value="hours">Hours</option>
+                <option value="days">Days</option>
+              </select>
             </label>
           </div>
 
